@@ -8,7 +8,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from sklearn.model_selection import GroupKFold
+from sklearn.model_selection import GroupKFold, LeaveOneGroupOut
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.preprocessing import LabelEncoder
 import xgboost as xgb
@@ -103,16 +103,23 @@ def select_features(X, y, groups):
     return avg_imp.head(TOP_N_FEATURES).index.tolist(), avg_imp
 
 
+USE_LOGO = True  # LeaveOneGroupOut for player-level data
+
+
 def cross_validate(X, y, groups):
     # Feature selection first pass
     top_features, full_importance = select_features(X, y, groups)
     X_selected = X[top_features]
 
-    gkf = GroupKFold(n_splits=N_FOLDS)
+    if USE_LOGO:
+        cv = LeaveOneGroupOut()
+    else:
+        cv = GroupKFold(n_splits=N_FOLDS)
+
     oof_preds = np.zeros(len(y))
     fold_importances = []
 
-    for fold, (train_idx, val_idx) in enumerate(gkf.split(X_selected, y, groups)):
+    for fold, (train_idx, val_idx) in enumerate(cv.split(X_selected, y, groups)):
         X_train, X_val = X_selected.iloc[train_idx], X_selected.iloc[val_idx]
         y_train, y_val = y[train_idx], y[val_idx]
 
