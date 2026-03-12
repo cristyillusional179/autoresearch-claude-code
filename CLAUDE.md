@@ -1,0 +1,29 @@
+# CLAUDE.md
+
+## What is this?
+
+A Claude Code skill that implements an autonomous experiment loop. Port of [pi-autoresearch](https://github.com/davebcn87/pi-autoresearch) — no MCP server, pure skill + hooks.
+
+## Project structure
+
+```
+skills/autoresearch/SKILL.md   # Core skill: setup, JSONL protocol, run/log/loop logic
+commands/autoresearch.md       # /autoresearch slash command (start, resume, off)
+hooks/autoresearch-context.sh  # UserPromptSubmit hook — injects context when active
+install.sh                     # Symlinks into ~/.claude/
+uninstall.sh                   # Removes symlinks
+```
+
+## Key conventions
+
+- **SKILL.md is the source of truth** for all behavior. The original 3 MCP tools (`init_experiment`, `run_experiment`, `log_experiment`) are encoded as instructions the agent follows using Bash/Read/Write.
+- **JSONL format** in `autoresearch.jsonl` is the state format. Config headers start segments, result lines track experiments. See SKILL.md for exact JSON schemas.
+- **Git commits on keep** use a `Result: {...}` trailer in the commit message body.
+- **Dashboard** is written to `autoresearch-dashboard.md` (file-based, not TUI).
+- The hook script must output to stdout (that's how Claude Code hooks inject context).
+
+## Editing tips
+
+- If changing the JSONL schema, update both the "JSONL State Protocol" and "Logging Results" sections in SKILL.md — they must stay in sync.
+- The command file uses `$ARGUMENTS` which Claude Code substitutes with the user's slash command arguments.
+- Hook scripts run in the user's cwd, not the repo directory.
