@@ -20,9 +20,9 @@ N_FOLDS = 5
 
 # --- Config ---
 XGB_PARAMS = {
-    "n_estimators": 200,
-    "max_depth": 4,
-    "learning_rate": 0.1,
+    "n_estimators": 500,
+    "max_depth": 5,
+    "learning_rate": 0.05,
     "subsample": 0.8,
     "colsample_bytree": 0.8,
     "min_child_weight": 3,
