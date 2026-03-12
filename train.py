@@ -20,15 +20,16 @@ N_FOLDS = 5
 
 # --- Config ---
 XGB_PARAMS = {
-    "n_estimators": 500,
-    "max_depth": 5,
-    "learning_rate": 0.05,
-    "subsample": 0.8,
-    "colsample_bytree": 0.8,
-    "min_child_weight": 3,
-    "reg_alpha": 0.1,
-    "reg_lambda": 1.0,
+    "n_estimators": 1000,
+    "max_depth": 4,
+    "learning_rate": 0.03,
+    "subsample": 0.7,
+    "colsample_bytree": 0.7,
+    "min_child_weight": 5,
+    "reg_alpha": 0.5,
+    "reg_lambda": 2.0,
     "random_state": SEED,
+    "early_stopping_rounds": 50,
 }
 
 DROP_COLS = ["session_pitch", "session", "pitch_type", "pitch_speed_mph"]
@@ -44,6 +45,22 @@ def load_data():
     groups = df[GROUP_COL]
     y = df[TARGET].values
     X = df.drop(columns=DROP_COLS)
+
+    # Feature engineering: kinetic chain ratios
+    eps = 1e-6
+    X["thorax_to_elbow_transfer_ratio"] = X["thorax_distal_transfer_fp_br"] / (X["elbow_transfer_fp_br"] + eps)
+    X["shoulder_to_elbow_transfer_ratio"] = X["shoulder_transfer_fp_br"] / (X["elbow_transfer_fp_br"] + eps)
+    X["pelvis_to_thorax_transfer_ratio"] = X["pelvis_lumbar_transfer_fp_br"] / (X["thorax_distal_transfer_fp_br"] + eps)
+    # Rotational velocity ratios
+    X["torso_to_pelvis_rot_ratio"] = X["max_torso_rotational_velo"] / (X["max_pelvis_rotational_velo"] + eps)
+    # Total energy transfer (kinetic chain sum)
+    X["total_energy_transfer"] = (X["shoulder_transfer_fp_br"] + X["elbow_transfer_fp_br"] +
+                                   X["thorax_distal_transfer_fp_br"] + X["pelvis_lumbar_transfer_fp_br"])
+    # GRF asymmetry
+    X["grf_lead_rear_ratio"] = X["lead_grf_mag_max"] / (X["rear_grf_mag_max"] + eps)
+    # Shoulder-elbow moment ratio
+    X["moment_ratio"] = X["shoulder_internal_rotation_moment"] / (X["elbow_varus_moment"] + eps)
+
     return X, y, groups
 
 
