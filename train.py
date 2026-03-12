@@ -37,14 +37,32 @@ TARGET = "pitch_speed_mph"
 GROUP_COL = "session"
 
 
+AGGREGATE_TO_PLAYER = True
+
+
 def load_data():
     df = pd.read_csv(DATA_PATH)
     # Encode p_throws (R/L) as numeric
     le = LabelEncoder()
     df["p_throws"] = le.fit_transform(df["p_throws"])
+
+    if AGGREGATE_TO_PLAYER:
+        # Aggregate to player-level means — reduces noise from pitch-level variation
+        numeric_cols = [c for c in df.select_dtypes(include=[np.number]).columns if c != GROUP_COL]
+        agg_df = df.groupby(GROUP_COL)[numeric_cols].mean().reset_index()
+        # Also add std dev of key features as consistency measures
+        std_cols = ["pitch_speed_mph", "elbow_transfer_fp_br", "shoulder_transfer_fp_br",
+                    "thorax_distal_transfer_fp_br"]
+        for col in std_cols:
+            if col in df.columns:
+                std_series = df.groupby(GROUP_COL)[col].std().fillna(0)
+                agg_df[f"{col}_std"] = agg_df[GROUP_COL].map(std_series)
+        df = agg_df
+
     groups = df[GROUP_COL]
     y = df[TARGET].values
-    X = df.drop(columns=DROP_COLS)
+    drop = [c for c in DROP_COLS if c in df.columns]
+    X = df.drop(columns=drop)
 
     # Feature engineering: kinetic chain ratios
     eps = 1e-6
