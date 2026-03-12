@@ -64,13 +64,38 @@ def load_data():
     return X, y, groups
 
 
+TOP_N_FEATURES = 25  # Keep top N features from first-pass importance
+
+
+def select_features(X, y, groups):
+    """First pass: quick model to rank features by importance."""
+    gkf = GroupKFold(n_splits=N_FOLDS)
+    fold_importances = []
+    quick_params = {**XGB_PARAMS, "n_estimators": 200, "early_stopping_rounds": 20}
+
+    for train_idx, val_idx in gkf.split(X, y, groups):
+        model = xgb.XGBRegressor(**quick_params)
+        model.fit(X.iloc[train_idx], y[train_idx],
+                  eval_set=[(X.iloc[val_idx], y[val_idx])], verbose=False)
+        fold_importances.append(
+            pd.Series(model.feature_importances_, index=X.columns)
+        )
+
+    avg_imp = pd.concat(fold_importances, axis=1).mean(axis=1).sort_values(ascending=False)
+    return avg_imp.head(TOP_N_FEATURES).index.tolist(), avg_imp
+
+
 def cross_validate(X, y, groups):
+    # Feature selection first pass
+    top_features, full_importance = select_features(X, y, groups)
+    X_selected = X[top_features]
+
     gkf = GroupKFold(n_splits=N_FOLDS)
     oof_preds = np.zeros(len(y))
     fold_importances = []
 
-    for fold, (train_idx, val_idx) in enumerate(gkf.split(X, y, groups)):
-        X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
+    for fold, (train_idx, val_idx) in enumerate(gkf.split(X_selected, y, groups)):
+        X_train, X_val = X_selected.iloc[train_idx], X_selected.iloc[val_idx]
         y_train, y_val = y[train_idx], y[val_idx]
 
         model = xgb.XGBRegressor(**XGB_PARAMS)
@@ -78,7 +103,7 @@ def cross_validate(X, y, groups):
 
         oof_preds[val_idx] = model.predict(X_val)
         fold_importances.append(
-            pd.Series(model.feature_importances_, index=X.columns)
+            pd.Series(model.feature_importances_, index=X_selected.columns)
         )
 
     rmse = np.sqrt(mean_squared_error(y, oof_preds))
