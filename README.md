@@ -1,5 +1,9 @@
 # autoresearch-claude-code
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-Skill-blueviolet)](https://docs.anthropic.com/en/docs/claude-code)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-green.svg)](https://python.org)
+
 Autonomous experiment loop for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Port of [pi-autoresearch](https://github.com/davebcn87/pi-autoresearch) as a pure skill (no MCP server).
 
 Continuously optimizes any measurable target (test speed, bundle size, training loss, model accuracy, etc.) by running experiments, measuring results, keeping winners, discarding losers, and looping forever until interrupted.
@@ -61,9 +65,9 @@ This will:
 
 ### Commands
 
-- `/autoresearch <goal>` — Start a new experiment loop
-- `/autoresearch` — Resume an existing loop (if `autoresearch.md` exists)
-- `/autoresearch off` — Pause autoresearch mode
+- `/autoresearch <goal>` -- Start a new experiment loop
+- `/autoresearch` -- Resume an existing loop (if `autoresearch.md` exists)
+- `/autoresearch off` -- Pause autoresearch mode
 
 ### Steering
 
@@ -72,6 +76,44 @@ Send a message while an experiment is running to steer the next experiment. The 
 ### Ideas backlog
 
 The agent writes promising but complex ideas to `autoresearch.ideas.md`. On resume, it reads this file for inspiration.
+
+## Example: Fastball Velocity Prediction
+
+This repo includes a worked example using the [Driveline OpenBiomechanics](https://github.com/drivelineresearch/openbiomechanics) dataset to predict fastball velocity from biomechanical metrics.
+
+### Setup
+
+```bash
+# Clone the dataset
+mkdir -p third_party
+git clone https://github.com/drivelineresearch/openbiomechanics.git third_party/openbiomechanics
+
+# Create Python environment
+python3 -m venv .venv
+source .venv/bin/activate
+pip install xgboost scikit-learn pandas numpy matplotlib
+```
+
+### Run the experiment
+
+```bash
+# Run directly
+.venv/bin/python train.py
+
+# Or via autoresearch
+/autoresearch  # reads obp-autoresearch.md and continues optimizing
+```
+
+### Results
+
+After 22 autonomous experiments, the model achieved **R²=0.783, RMSE=2.20 mph** -- predicting a new player's fastball velocity within ~2 mph from their biomechanics alone.
+
+| Metric | Baseline | Best | Improvement |
+|--------|----------|------|-------------|
+| R² | 0.440 | 0.783 | +78% |
+| RMSE | 3.53 mph | 2.20 mph | -38% |
+
+See [`experiments/worklog.md`](experiments/worklog.md) for the full experiment narrative and [`obp-autoresearch.md`](obp-autoresearch.md) for the session configuration.
 
 ## How it works
 
