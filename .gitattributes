@@ -1,0 +1,2 @@
+# Override linguist: examples/ contains real project code, not vendored samples
+examples/*.py linguist-vendored=false linguist-documentation=false
