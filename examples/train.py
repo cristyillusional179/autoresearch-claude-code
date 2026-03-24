@@ -81,7 +81,7 @@ def load_data():
     if AGGREGATE_TO_PLAYER:
         numeric_cols = [c for c in df.select_dtypes(include=[np.number]).columns if c != GROUP_COL]
         agg_df = df.groupby(GROUP_COL)[numeric_cols].mean().reset_index()
-        std_cols = ["pitch_speed_mph", "elbow_transfer_fp_br", "shoulder_transfer_fp_br",
+        std_cols = ["elbow_transfer_fp_br", "shoulder_transfer_fp_br",
                     "thorax_distal_transfer_fp_br"]
         for col in std_cols:
             if col in df.columns:
@@ -95,6 +95,15 @@ def load_data():
     X = df.drop(columns=drop)
 
     # Feature engineering: kinetic chain ratios
+    _FE_COLS = ["elbow_transfer_fp_br", "shoulder_transfer_fp_br",
+                "thorax_distal_transfer_fp_br", "pelvis_lumbar_transfer_fp_br",
+                "max_torso_rotational_velo", "max_pelvis_rotational_velo",
+                "lead_grf_mag_max", "rear_grf_mag_max",
+                "shoulder_internal_rotation_moment", "elbow_varus_moment"]
+    _missing = [c for c in _FE_COLS if c not in X.columns]
+    if _missing:
+        info(f"Warning: missing expected columns for feature engineering: {_missing}")
+
     eps = 1e-6
     X["thorax_to_elbow_transfer_ratio"] = X["thorax_distal_transfer_fp_br"] / (X["elbow_transfer_fp_br"] + eps)
     X["shoulder_to_elbow_transfer_ratio"] = X["shoulder_transfer_fp_br"] / (X["elbow_transfer_fp_br"] + eps)
@@ -120,13 +129,13 @@ def select_features(X, y, groups):
         "n_estimators": 200, "max_depth": 4, "learning_rate": 0.03,
         "subsample": 0.7, "colsample_bytree": 0.7, "min_child_weight": 5,
         "reg_alpha": 0.5, "reg_lambda": 2.0, "random_state": SEED,
-        "early_stopping_rounds": 20,
     }
 
     for train_idx, val_idx in gkf.split(X, y, groups):
         model = xgb.XGBRegressor(**quick_params)
         model.fit(X.iloc[train_idx], y[train_idx],
-                  eval_set=[(X.iloc[val_idx], y[val_idx])], verbose=False)
+                  eval_set=[(X.iloc[val_idx], y[val_idx])], verbose=False,
+                  early_stopping_rounds=20)
         fold_importances.append(
             pd.Series(model.feature_importances_, index=X.columns)
         )
@@ -179,6 +188,7 @@ def cross_validate(X, y, groups):
             if MODEL_TYPE == "xgboost":
                 fit_kwargs["eval_set"] = [(X_val, y_val)]
                 fit_kwargs["verbose"] = False
+                fit_kwargs["early_stopping_rounds"] = 50
             elif MODEL_TYPE == "catboost":
                 fit_kwargs["eval_set"] = (X_val, y_val)
             elif MODEL_TYPE == "lightgbm":
@@ -186,13 +196,27 @@ def cross_validate(X, y, groups):
                 fit_kwargs["eval_set"] = [(X_val, y_val)]
                 fit_kwargs["callbacks"] = [lgb.early_stopping(50), lgb.log_evaluation(0)]
             elif MODEL_TYPE in ("pytorch_mlp", "mc_dropout", "ft_transformer"):
-                # PyTorch wrappers: eval_set passed to inner pipeline step
-                # Step names: mlp, mc, ftt (must match models.py Pipeline keys)
+                # PyTorch wrappers: eval_set passed to inner pipeline step.
+                # The Pipeline's StandardScaler transforms X_train but not eval_set,
+                # so we must pre-scale X_val to match what the inner model sees.
+                # NOTE: This works because both this scaler and the Pipeline's scaler
+                # are StandardScaler fit on the same X_train. If the Pipeline gains
+                # other preprocessing steps, this must be updated to match.
+                from sklearn.preprocessing import StandardScaler as _SS
+                _scaler = _SS().fit(X_train)
+                X_val_scaled = pd.DataFrame(
+                    _scaler.transform(X_val), columns=X_val.columns, index=X_val.index
+                )
                 step_name = {"pytorch_mlp": "mlp", "mc_dropout": "mc",
                              "ft_transformer": "ftt"}[MODEL_TYPE]
-                fit_kwargs[f"{step_name}__eval_set"] = [(X_val, y_val)]
+                fit_kwargs[f"{step_name}__eval_set"] = [(X_val_scaled, y_val)]
             elif MODEL_TYPE == "tabnet":
-                fit_kwargs["tabnet__eval_set"] = [(X_val.values, y_val)]
+                # TabNet Pipeline has StandardScaler — pre-scale eval_set
+                from sklearn.preprocessing import StandardScaler as _SS
+                _scaler_tn = _SS().fit(X_train)
+                X_val_scaled_tn = _scaler_tn.transform(X_val)
+                fit_kwargs["tabnet__eval_set"] = [(X_val_scaled_tn, y_val.reshape(-1, 1))]
+                fit_kwargs["tabnet__eval_name"] = ["val"]
                 fit_kwargs["tabnet__eval_metric"] = ["rmse"]
 
         # Stacking: inject group-aware inner CV
